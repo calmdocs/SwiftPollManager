@@ -21,6 +21,9 @@ public var KeyExchange_Curve25519_SHA256_HKDF_AESGCM = { return try! KeyExchange
 public var KeyExchange_Curve25519_SHA384_HKDF_AESGCM = { return try! KeyExchange_Curve25519_SHA384_HKDF_AESGCM_Store("") }
 public var KeyExchange_Curve25519_SHA512_HKDF_AESGCM = { return try! KeyExchange_Curve25519_SHA512_HKDF_AESGCM_Store("") }
 
+
+
+
 /// PollManager is an ObservableObject used for long polling
 public class PollManager: ObservableObject {
     
@@ -41,6 +44,26 @@ public class PollManager: ObservableObject {
     public func pong() {
         self.pingCount = 0
     }
+    
+    /// Get the current time since 1970 in milliseconds.
+    /// - Returns: Data timestamp (utf8 encoded).
+    public func keyExchangeCurrentTimestampData() -> Data {
+        return KeyExchangeCurrentTimestampData()
+    }
+    
+    #if os(macOS)
+    
+    /// Get a random open port in the range (e.g. RandomOpenPort(8001..<9000))
+    public func randomOpenPort(_ range: Range<Int>) -> Int {
+        return RandomOpenPort(range)
+    }
+    
+    /// Terminate the running executable if another copy of the executable is already running.
+    public func exitAppIfAlreadyOpen() {
+        ExitAppIfAlreadyOpen()
+    }
+    
+    #endif
     
     /// Converts an Encodeable object to a string
     /// - Parameter value: Object to encode.
