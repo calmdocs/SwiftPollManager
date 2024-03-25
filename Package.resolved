@@ -1,0 +1,24 @@
+{
+  "originHash" : "c168a4a227ef474c8d329dcd134d74e6e7432902704b9a2e7203e48e991ccbb9",
+  "pins" : [
+    {
+      "identity" : "swiftkeyexchange",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/calmdocs/SwiftKeyExchange",
+      "state" : {
+        "branch" : "main",
+        "revision" : "55a06c0b47c12b40412e722fffe83e120525569b"
+      }
+    },
+    {
+      "identity" : "swiftprocessmanager",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/calmdocs/SwiftProcessManager",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b56b6e9b0cfdafa1d472521313cab3d4758384b4"
+      }
+    }
+  ],
+  "version" : 3
+}
