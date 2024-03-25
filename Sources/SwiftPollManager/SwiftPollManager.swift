@@ -38,14 +38,14 @@ public class PollManager: ObservableObject {
     public var timestamp = KeyExchangeCurrentTimestamp() // Int64 current time since 1970 in milliseconds.
    
     /// Set ping count to 0
-    func pong() {
+    public func pong() {
         self.pingCount = 0
     }
     
     /// Converts an Encodeable object to a string
     /// - Parameter value: Object to encode.
     /// - Returns: encoded string.
-    func objectAsString<T>(_ value: T) throws -> String where T : Encodable {
+    public func objectAsString<T>(_ value: T) throws -> String where T : Encodable {
         return String(data: try JSONEncoder().encode(value), encoding: .utf8)!
     }
     
