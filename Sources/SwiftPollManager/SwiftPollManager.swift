@@ -22,7 +22,7 @@ public var KeyExchange_Curve25519_SHA384_HKDF_AESGCM = { return try! KeyExchange
 public var KeyExchange_Curve25519_SHA512_HKDF_AESGCM = { return try! KeyExchange_Curve25519_SHA512_HKDF_AESGCM_Store("") }
 
 /// PollManager is an ObservableObject used for long polling
-class PollManager: ObservableObject {
+public class PollManager: ObservableObject {
     
     // Bearer token.  Defaults to self.kes.LocalPublicKey() unless we manually change it
     public var bearerToken: String = ""
