@@ -21,9 +21,6 @@ public var KeyExchange_Curve25519_SHA256_HKDF_AESGCM = { return try! KeyExchange
 public var KeyExchange_Curve25519_SHA384_HKDF_AESGCM = { return try! KeyExchange_Curve25519_SHA384_HKDF_AESGCM_Store("") }
 public var KeyExchange_Curve25519_SHA512_HKDF_AESGCM = { return try! KeyExchange_Curve25519_SHA512_HKDF_AESGCM_Store("") }
 
-
-
-
 /// PollManager is an ObservableObject used for long polling
 public class PollManager: ObservableObject {
     
@@ -64,6 +61,12 @@ public class PollManager: ObservableObject {
     }
     
     #endif
+    
+    /// Return the macOS system architecture.
+    /// - Returns: The system architecture as a string (e.g. "arm64").
+    public func systemArchitecture() -> String {
+        return SystemArchitecture()
+    }
     
     /// Converts an Encodeable object to a string
     /// - Parameter value: Object to encode.
