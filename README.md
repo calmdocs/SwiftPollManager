@@ -187,7 +187,7 @@ class ItemsProvider: ObservableObject {
     }
 }
 ```
-## Security and optional encrption
+## Security and optional encryption
 
 macOS does not allow you to use https (i.e. encrypted) connections without significant complexity.  However, connecting the SwiftUI and golang apps via http is relatively simple.
 
