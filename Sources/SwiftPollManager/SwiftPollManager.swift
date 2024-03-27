@@ -162,7 +162,6 @@ public class PollManager: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let (data, response) = try await URLSession.shared.data(for: request)
         if (response as! HTTPURLResponse).statusCode != 200 {
-            print("publish failure")
             throw PollManagerError.publishFailure
         }
         return data
