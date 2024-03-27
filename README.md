@@ -4,7 +4,7 @@ As an alternative to building an electron app or using a gui toolkit, run a gola
 
 Given that http is unencrypted, the messages can be optionally encrypted using the [calmdocs/SwiftKeyExchange swift library](https://github.com/calmdocs/SwiftKeyExchange) and [calmdocs/keyexchange go library](https://github.com/calmdocs/keyexchange).
 
-If you already have xCode and go installed, following the example to build a new running app takes about 2 minutes.
+If you already have xCode and go installed, implementing the following example to build a new running app takes about 2 minutes.
 
 ## Example
 
