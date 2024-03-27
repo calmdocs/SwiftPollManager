@@ -78,6 +78,7 @@ struct ContentView: View {
                                 id: String(item.id),
                                 data: ""
                             )
+                            self.ip.items = self.ip.items.filter { $0.id != item.id }
                         }
                     }, label: {
                         Image(systemName: "trash")
@@ -169,7 +170,14 @@ class ItemsProvider: ObservableObject {
                 kes: self.pm.kes,
                 auth: self.pm.authTimestamp
             ) {
-                self.items = updateItems.sorted(by: { $0.id < $1.id })
+                for v in updateItems {
+                    if let row = self.items.firstIndex(where: {$0.id == v.id}) {
+                        self.items[row] = v
+                    } else {
+                        self.items.append(v)
+                    }
+                }
+                
                 return
             }
         } catch {
@@ -180,5 +188,47 @@ class ItemsProvider: ObservableObject {
 }
 ```
 ## Security
+
+macOS does not allow you to use https (i.e. encrypted) connections without significant complexity.  However, connecting the SwiftUI and golang apps via http is relatively simple.
+
+This library creates a Diffie–Hellman Key Exchange ([DHKE](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange)) connection between the SwiftUI app and golang app using the [calmdocs/SwiftKeyExchange swift library](https://github.com/calmdocs/SwiftKeyExchange) and [calmdocs/keyexchange go library](https://github.com/calmdocs/keyexchange).  The SwiftUI app sends its public key as an argumant to the golang app, and the golang app then sends its public key to stdOut as a [PEM message](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) for the SwiftUI app to read.
+
+If you want to use this library without encypting (or if you want to use your own encryption), update gobinary.go as directed in the comments in that file, and change the swift publish function as follows:  
+```
+ func publish(
+        type: String,
+        id: String,
+        data: String
+    ) async {
+        do {
+            let message = try await self.pm.publishLocal(               
+                TypeIDAndData(
+                    type: type,
+                    id: id,
+                    data: data
+                ),
+                port: self.port,
+                path: "/request",
+                bearerToken: "bearerToken123",
+            )
+            
+            // Update self.items
+            if let updateItems: [Item] = try? JSONDecoder().decode([Item].self, from: message) {
+                for v in updateItems {
+                    if let row = self.items.firstIndex(where: {$0.id == v.id}) {
+                        self.items[row] = v
+                    } else {
+                        self.items.append(v)
+                    }
+                }
+                return
+            }
+        } catch {
+            print(error)
+            return
+        }
+    }
+)
+```
 
 We have been as conservative as possible when creating this library.  See the security details available on the [calmdocs/SwiftKeyExchange package page](https://github.com/calmdocs/SwiftKeyExchange). Please note that you use this library and the code in this repo at your own risk, and we accept no liability in relation to its use.

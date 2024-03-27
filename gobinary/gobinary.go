@@ -21,6 +21,32 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Status struct {
+	ID       int64
+	Error    error
+	Name     string
+	Status   string
+	Progress float64
+}
+
+type Request struct {
+	Type string
+	ID   interface{}
+	Data interface{}
+}
+
+type Store struct {
+	sync.RWMutex
+
+	m        map[int64]Status
+	updateCh chan bool
+	maxID    int64
+
+	authToken               string
+	keyexchangeStore        *keyexchange.Store
+	additionalDataTimestamp int64
+}
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -65,12 +91,24 @@ func main() {
 	}
 	fmt.Println(pemString)
 
-	// Create store
+	// Create store and randomise all items (every 1.25 seconds)
 	s := NewStore(
 		*authToken,
 		keyexchangeStore,
 		keyexchange.CurrentTimestamp(),
 	)
+	go func() {
+		ticker := time.NewTicker(1250 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.randomiseAllItems()
+			}
+		}
+	}()
 
 	// Create mux router
 	r := mux.NewRouter().StrictSlash(true)
@@ -97,13 +135,15 @@ func main() {
 		}
 
 		// Get wsRequest
-		var wsRequest WSRequest
+		var wsRequest Request
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		// Note: replace the below function with the following if you are not using keyexchangeStore enncryption
+		// err = json.Unmarshal(b, &wsRequest)
 		err = s.keyexchangeStore.UnmarshalJSONAndDecryptFromJSONWithADCheck(
 			b,
 			&wsRequest,
@@ -138,9 +178,6 @@ func main() {
 		}
 	})
 
-	// Start item randomiser
-	go s.StartRandomiser(ctx)
-
 	// Create the first item
 	s.newItem()
 
@@ -162,31 +199,6 @@ func main() {
 	}
 }
 
-type Status struct {
-	ID       int64
-	Error    error
-	Name     string
-	Status   string
-	Progress float64
-}
-
-type WSRequest struct {
-	Type string
-	ID   interface{}
-	Data interface{}
-}
-
-type Store struct {
-	sync.RWMutex
-
-	m     map[int64]Status
-	maxID int64
-
-	authToken               string
-	keyexchangeStore        *keyexchange.Store
-	additionalDataTimestamp int64
-}
-
 func NewStore(
 	authToken string,
 	keyexchangeStore *keyexchange.Store,
@@ -194,6 +206,7 @@ func NewStore(
 ) *Store {
 	return &Store{
 		m:                       make(map[int64]Status),
+		updateCh:                make(chan bool, 5),
 		maxID:                   0,
 		authToken:               authToken,
 		keyexchangeStore:        keyexchangeStore,
@@ -201,25 +214,7 @@ func NewStore(
 	}
 }
 
-func (s *Store) StartRandomiser(parentCtx context.Context) {
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
-
-	ticker := time.NewTicker(1250 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-
-			// Randomise all items (every 1.25 seconds)
-			s.randomiseAllItems()
-		}
-	}
-}
-
-func (s *Store) wsHandleInput(ctx context.Context, wsRequest WSRequest, w http.ResponseWriter) (err error) {
+func (s *Store) wsHandleInput(ctx context.Context, wsRequest Request, w http.ResponseWriter) (err error) {
 
 	// Handle message
 	switch wsRequest.Type {
@@ -235,15 +230,9 @@ func (s *Store) wsHandleInput(ctx context.Context, wsRequest WSRequest, w http.R
 
 		// Long poll until the local status does not match the inStatus
 		m := []Status{}
-
-		idleDuration := time.Second
-		idleDelay := time.NewTimer(idleDuration)
-		defer idleDelay.Stop()
 		done := false
 		for !done {
 			done = true
-
-			idleDelay.Reset(idleDuration)
 
 			select {
 			case <-ctx.Done():
@@ -271,14 +260,14 @@ func (s *Store) wsHandleInput(ctx context.Context, wsRequest WSRequest, w http.R
 				m = append(m, wd)
 			}
 
-			// Retry if no updates to inStatus groups
+			// Wait for status change if there is no updates to inStatus
 			if len(inStatus) != 0 && len(m) == 0 {
 				done = false
 
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
-				case <-idleDelay.C:
+				case <-s.updateCh:
 				}
 				continue
 			}
@@ -287,6 +276,8 @@ func (s *Store) wsHandleInput(ctx context.Context, wsRequest WSRequest, w http.R
 		// Send local status
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		// Note: replace the below function with the following if you are not using keyexchangeStore enncryption
+		// b, err := json.Marshal(m)
 		b, err := s.keyexchangeStore.EncodeJSONAndEncryptToJSON(
 			m,
 			keyexchange.CurrentTimestampBytes(),
@@ -335,6 +326,11 @@ func (s *Store) newItem() {
 		Status:   fmt.Sprintf("%.2f %%", float64(0)*100),
 		Progress: 0,
 	}
+
+	select {
+	case s.updateCh <- true:
+	default:
+	}
 }
 
 func (s *Store) deleteItem(itemID int64) bool {
@@ -346,6 +342,12 @@ func (s *Store) deleteItem(itemID int64) bool {
 		return false
 	}
 	delete(s.m, itemID)
+
+	select {
+	case s.updateCh <- true:
+	default:
+	}
+
 	return true
 }
 
@@ -360,5 +362,10 @@ func (s *Store) randomiseAllItems() {
 		sg.Progress = newProgress
 		sg.Status = fmt.Sprintf("%.2f %%", newProgress*100)
 		s.m[sg.ID] = sg
+	}
+
+	select {
+	case s.updateCh <- true:
+	default:
 	}
 }
