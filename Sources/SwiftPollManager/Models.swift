@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct TypeIDAndData: Codable {
-    let type: String
-    let id:   String
-    let data: String
+public struct TypeIDAndData: Codable {
+    public let type: String
+    public let id:   String
+    public let data: String
     
     public enum CodingKeys: String, CodingKey {
         case type = "Type"
