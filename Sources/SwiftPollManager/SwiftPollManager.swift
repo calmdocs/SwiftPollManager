@@ -83,7 +83,17 @@ public class PollManager: ObservableObject {
     /// Authenticate using an additionalData String timestamp (tracking the current time as an Int64 since 1970 in milliseconds).
     /// - Parameter additionalData: The additionalData string
     /// - Returns: Authentication success or failure Bool.
-    public func authTimestamp(_ additionalData: String) throws {
+    public func authTimestamp(_ additionalData: String) -> Bool {
+        do {
+            try authTimestampThrows(additionalData)
+            return true
+        } catch {
+            print("authTimestamp error:", error)
+            return false
+        } 
+    }
+
+    public func authTimestampThrows(_ additionalData: String) throws {
     
         // Only process new messages
         guard let t = KeyExchangeTimestamp(additionalData) else {
