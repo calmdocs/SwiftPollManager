@@ -14,6 +14,11 @@ import SwiftKeyExchange
 public enum PollManagerError: Error {
     case urlError
     case publishFailure
+
+    case timestampInvalidFormat
+    case timestampExpired
+    case timestampInPastError
+    case timestampInFutureError
 }
 
 ///  Function to create a new KeyExchangeStore.  Alternatively, create a similar function using a custom KeyExchangeStore().
@@ -78,23 +83,25 @@ public class PollManager: ObservableObject {
     /// Authenticate using an additionalData String timestamp (tracking the current time as an Int64 since 1970 in milliseconds).
     /// - Parameter additionalData: The additionalData string
     /// - Returns: Authentication success or failure Bool.
-    public func authTimestamp(_ additionalData: String) -> Bool {
+    public func authTimestamp(_ additionalData: String) throws {
     
         // Only process new messages
         guard let t = KeyExchangeTimestamp(additionalData) else {
-            return false
+            throw PollManagerError.timestampInvalidFormat
         }
         if t <= self.timestamp {
-            return false
+            throw PollManagerError.timestampExpired
         }
         
         // Allow up to 10 milliseconds of jitter
         let delta = KeyExchangeCurrentTimestamp()-t
-        if delta < 0 || delta > 10 {
-            return false
+        if delta < 0 {
+            throw PollManagerError.timestampInPastError
+        }
+        if delta > 10 {
+            throw PollManagerError.timestampInFutureError
         }
         self.timestamp = t
-        return true
     }
     
     /// Decrypt data and decode JSON
