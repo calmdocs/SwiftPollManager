@@ -64,6 +64,8 @@ struct ContentView: View {
                 }, label: {
                     Image(systemName: "plus")
                 })
+                .disabled(ip.isWaiting)
+                
                 Spacer()
             }
             ForEach(ip.items) { item in
@@ -83,6 +85,7 @@ struct ContentView: View {
                     }, label: {
                         Image(systemName: "trash")
                     })
+                    .disabled(ip.isWaiting)
                 }
             }
         }
@@ -95,6 +98,9 @@ class ItemsProvider: ObservableObject {
 
     private var isFirstRun: Bool = true
     private var port = 0
+    
+    // Check if waiting for publish response
+    @Published var isWaiting = false
 
     init() {
         let binName = self.pm.systemArchitecture() == "arm64" ? "gobinary-darwin-arm64" : "gobinary-darwin-amd64"
@@ -144,7 +150,24 @@ class ItemsProvider: ObservableObject {
         }
     }
     
+    // Send publishTypeIDAndData request to go binary
     func publish(
+        type: String,
+        id: String,
+        data: String
+    ) {
+        if isWaiting {
+            print("Publish request ignored.  Waiting for previous request to finish ...")
+            return
+        }
+        isWaiting = true
+        Task {
+            await self.publishAndWait(type: type, id: id, data: data)
+            isWaiting = false
+        }
+    }
+    
+    func publishAndWait(
         type: String,
         id: String,
         data: String
