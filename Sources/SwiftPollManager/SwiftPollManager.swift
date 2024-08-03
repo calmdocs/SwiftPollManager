@@ -103,12 +103,12 @@ public class PollManager: ObservableObject {
             throw PollManagerError.timestampExpired
         }
         
-        // Allow up to 250 milliseconds of jitter
+        // Allow up to 50 milliseconds of jitter
         let delta = KeyExchangeCurrentTimestamp()-t
-        if delta < 250 {
+        if delta < 0 {
             throw PollManagerError.timestampInPastError
         }
-        if delta > 250 {
+        if delta > 20 {
             throw PollManagerError.timestampInFutureError
         }
         self.timestamp = t
