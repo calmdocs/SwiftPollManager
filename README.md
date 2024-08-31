@@ -172,6 +172,29 @@ class ItemsProvider: ObservableObject {
         id: String,
         data: String
     ) async {
+    
+        // Perform 5 attempts, and retry on any failure:
+        for _ in 0..<5 {
+            do {
+                return try await self.publishAndWaitThrows(type: type, id: id, data: data)
+            } catch {
+                // This 'continue' statement isn't technically
+                // required, but makes our intent more clear:
+                continue
+            }
+        }
+        do {
+            return try await self.publishAndWaitThrows(type: type, id: id, data: data)
+        } catch {
+            print(error)
+        }
+    }
+    
+    func publishAndWaitThrows(
+        type: String,
+        id: String,
+        data: String
+    ) async {
         do {
             let message = try await self.pm.publishLocal(
                 self.pm.kes.encodeJSONAndEncrypt(
