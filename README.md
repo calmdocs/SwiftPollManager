@@ -237,7 +237,7 @@ class ItemsProvider: ObservableObject {
 
 macOS does not allow you to use https (i.e. encrypted) connections without significant complexity.  However, connecting the SwiftUI and golang apps via http is relatively simple.
 
-This library creates a Diffie–Hellman Key Exchange ([DHKE](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange)) connection between the SwiftUI app and golang app using the [calmdocs/SwiftKeyExchange swift library](https://github.com/calmdocs/SwiftKeyExchange) and [calmdocs/keyexchange go library](https://github.com/calmdocs/keyexchange).  The SwiftUI app sends its public key as an argumant to the golang app, and the golang app then sends its public key to stdOut as a [PEM message](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) for the SwiftUI app to read.
+This library creates a Diffie–Hellman Key Exchange ([DHKE](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange)) connection between the SwiftUI app and golang app using the [calmdocs/SwiftKeyExchange swift library](https://github.com/calmdocs/SwiftKeyExchange) and [calmdocs/keyexchange go library](https://github.com/calmdocs/keyexchange).  The SwiftUI app sends its public key as an argument to the golang app, and the golang app then sends its public key to stdOut as a [PEM message](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) for the SwiftUI app to read.
 
 If you want to use this library without encypting (or if you want to use your own encryption), update gobinary.go as directed in the comments in that file, and change the swift publish function as follows:  
 ```
